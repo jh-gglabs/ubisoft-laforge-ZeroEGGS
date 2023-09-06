@@ -76,13 +76,44 @@ class ZeroEggsInference(object):
             )
             return bvh_output
 
-    def generate_gesture_from_audio_chunk(self, audio_chunk, style=None):
+    def generate_gesture_from_audio_chunk(self, audio_chunk, style_bvh_path, style_encoding_type="example"):
         """
         Args:
-            audio_chunk: Numpy array of audio chunk
-            style: TODO
+            audio_chunk: Numpy array of audio chunk data
+            style_bvh_path: Path to style bvh file.
+            style_encoding_type: How to encode the style. Either "example" or "label". Defaults to "example".
         """
-        pass
+        n_frames = int(round(60.0 * (len(audio_chunk) / 16000)))
+
+        with torch.no_grad():
+            audio_features = torch.as_tensor(
+                    preprocess_audio(
+                        audio_chunk,
+                        60,
+                        n_frames,
+                        self.data_pipeline_conf["audio_conf"],
+                        feature_type=self.data_pipeline_conf["audio_feature_type"],
+                    ),
+                    device=self.device,
+                    dtype=torch.float32,
+            )
+            # Normalize Audio Input
+            audio_features = (audio_features[np.newaxis] - self.stat_data["audio_input_mean"]) / self.stat_data["audio_input_std"]
+            
+            # 1) Speech Encoding
+            speech_encoding = self.speech_encoder_network(audio_features)
+
+            # 2) Style Encoding
+            style_encoding, animation_data = self._create_style_encoding(style_bvh_path)
+
+            # 3) Decode and Generate Gestures
+            bvh_output = self._make_bvh_outputs(
+                speech_encoding=speech_encoding,
+                style_encoding=style_encoding,
+                animation_data=animation_data
+            )
+            return bvh_output
+
 
     def _make_bvh_outputs(self, speech_encoding, style_encoding, animation_data):
         if style_encoding.dim() == 2:
