@@ -54,3 +54,4 @@ data/processed_v1/processed_data.npz
 .ipynb_checkpoints
 *.bvh
 *.wav
+*.zip
