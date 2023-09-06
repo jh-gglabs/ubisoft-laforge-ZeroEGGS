@@ -114,7 +114,6 @@ class ZeroEggsInference(object):
             )
             return bvh_output
 
-
     def _make_bvh_outputs(self, speech_encoding, style_encoding, animation_data):
         if style_encoding.dim() == 2:
             style_encoding = style_encoding.unsqueeze(1).repeat((1, speech_encoding.shape[1], 1))
