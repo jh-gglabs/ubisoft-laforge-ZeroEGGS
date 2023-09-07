@@ -9,7 +9,9 @@ RUN apt-get update && \
         build-essential \
         python3.8 \
         python3.8-venv \
-        python3-pip
+        python3-pip \
+        unzip \
+        sox
 
 SHELL ["/bin/bash", "-c"]
 
@@ -21,6 +23,9 @@ RUN python3.8 -m venv venv && \
     pip install -r requirements.txt
 
 COPY . .
+RUN chmod +x extract_data.sh && \
+    extract_data.sh
+
 RUN chmod +x entrypoint.sh
 
 CMD ["./entrypoint.sh"]
