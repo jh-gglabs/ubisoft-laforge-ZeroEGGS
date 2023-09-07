@@ -8,13 +8,15 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         build-essential \
         python3.8 \
-        python3.8-venv
+        python3.8-venv \
+        python3-pip
 
 SHELL ["/bin/bash", "-c"]
 
 COPY requirements.txt .
 RUN python3.8 -m venv venv && \
     source venv/bin/activate && \
+    pip install --upgrade setuptools && \
     pip install -r requirements.txt
 
 COPY . .
