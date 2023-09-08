@@ -52,6 +52,6 @@ data/processed_v1/processed_data.npz
 .vscode
 .idea
 .ipynb_checkpoints
-*.bvh
-*.wav
+# *.bvh
+# *.wav
 *.zip
