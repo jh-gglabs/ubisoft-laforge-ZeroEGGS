@@ -16,15 +16,15 @@ RUN apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
-COPY requirements.txt .
+COPY requirements-module.txt .
 RUN python3.8 -m venv venv && \
     source venv/bin/activate && \
     pip install --upgrade setuptools && \
     pip install -U pip && \
-    pip install -r requirements.txt
+    pip install -r requirements-module.txt
 
 COPY . .
 
-RUN chmod +x entrypoint.sh
+RUN chmod +x entrypoint-module.sh
 
-CMD ["./entrypoint.sh"]
+CMD ["./entrypoint-module.sh"]
