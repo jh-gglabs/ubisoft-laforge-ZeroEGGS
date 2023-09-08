@@ -11,7 +11,8 @@ RUN apt-get update && \
         python3.8-venv \
         python3-pip \
         unzip \
-        sox
+        sox \
+        ffmpeg
 
 SHELL ["/bin/bash", "-c"]
 
