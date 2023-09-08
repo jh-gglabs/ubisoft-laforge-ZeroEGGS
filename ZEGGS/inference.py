@@ -64,9 +64,11 @@ class ZeroEggsInference(object):
                     ),
                     device=self.device,
                     dtype=torch.float32,
-            )
+            ).detach().cpu().numpy()
+
             # Normalize Audio Input
             audio_features = (audio_features[np.newaxis] - self.stat_data["audio_input_mean"]) / self.stat_data["audio_input_std"]
+            audio_features = torch.as_tensor(audio_features, device=self.device, dtype=torch.float32)
             
             # 1) Speech Encoding
             speech_encoding = self.speech_encoder_network(audio_features)
@@ -139,7 +141,7 @@ class ZeroEggsInference(object):
     def _make_bvh_outputs(self, speech_encoding, style_encoding, animation_data):
         if style_encoding.dim() == 2:
             style_encoding = style_encoding.unsqueeze(1).repeat((1, speech_encoding.shape[1], 1))
-        
+
         parents = torch.as_tensor(self.details["parents"], dtype=torch.long, device=self.device)
         dt = self.details["dt"]
         bone_names = self.details["bone_names"]
@@ -156,7 +158,6 @@ class ZeroEggsInference(object):
         anim_output_std = torch.as_tensor(
             self.stat_data["anim_output_std"], dtype=torch.float32, device=self.device
         )
-        print(anim_input_mean.shape)
 
         root_pos, root_rot, root_vel, root_vrt, lpos, ltxy, lvel, lvrt, gaze_pos = animation_data
         (
@@ -258,7 +259,7 @@ class ZeroEggsInference(object):
                     torch.zeros_like(S_root_vel),
                 ],
                 dim=1,
-            )
+            ).detach().cpu().numpy()
 
             example_feature_vec = (example_feature_vec - self.stat_data["anim_input_mean"]) / self.stat_data["anim_input_std"]
             example_feature_vec = torch.as_tensor(example_feature_vec, dtype=torch.float32, device=self.device)
@@ -268,10 +269,11 @@ class ZeroEggsInference(object):
             )
         
         elif (style_encoding_type == "label") & (style_name is not None):
-            n_labels = len(self.details["label_names"])
-            style_index = self.details["label_names"].index(style_name)
-            style_encoding = torch.zeros((1, n_labels), dtype=torch.float32, device=self.device)
-            style_encoding[0, style_index] = 1.0
+            raise NotImplementedError
+            # n_labels = len(self.details["label_names"])
+            # style_index = self.details["label_names"].index(style_name)
+            # style_encoding = torch.zeros((1, n_labels), dtype=torch.float32, device=self.device)
+            # style_encoding[0, style_index] = 1.0
 
         animation_data = (
             root_pos, root_rot, root_vel, root_vrt,
@@ -326,16 +328,16 @@ if __name__ == "__main__":
 
     # Style Encoding Type
     ## "Example" based
-    audio_file_path = "../data/clean/067_Speech_2_x_1_0.wav"
-    bvh_file_path = "../data/clean/067_Speech_2_x_1_0.bvh"
+    audio_file_path = "../data/samples/067_Speech_2_x_1_0.wav"
+    bvh_file_path = "../data/samples/067_Speech_2_x_1_0.bvh"
 
     bvh_output = zeggs_module.generate_gesture_from_audio_file(
         audio_file_path, bvh_file_path, style_encoding_type="example"
     )
 
     ## "Label" based
-    bvh_output = zeggs_module.generate_gesture_from_audio_file(
-        audio_file_path, bvh_file_path, style_encoding_type="label", style_name="Sad"
-    )
+    # bvh_output = zeggs_module.generate_gesture_from_audio_file(
+        # audio_file_path, bvh_file_path, style_encoding_type="label", style_name="Sad"
+    # )
 
     # bvh.save("./test.bvh", bvh_output)
