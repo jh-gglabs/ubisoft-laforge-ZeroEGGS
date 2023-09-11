@@ -14,6 +14,13 @@ RUN apt-get update && \
 
 SHELL ["/bin/bash", "-c"]
 
+COPY requirements-api.txt .
+RUN python3.8 -m venv venv && \
+    source venv/bin/activate && \
+    pip install --upgrade setuptools && \
+    pip install -U pip && \
+    pip install -r requirements-api.txt
+
 COPY . .
 
 RUN chmod +x entrypoint-api.sh
