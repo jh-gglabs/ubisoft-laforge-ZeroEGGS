@@ -115,9 +115,11 @@ class ZeroEggsInference(object):
                     ),
                     device=self.device,
                     dtype=torch.float32,
-            )
+            ).detach().cpu().numpy()
+            
             # Normalize Audio Input
             audio_features = (audio_features[np.newaxis] - self.stat_data["audio_input_mean"]) / self.stat_data["audio_input_std"]
+            audio_features = torch.as_tensor(audio_features, device=self.device, dtype=torch.float32)
             
             # 1) Speech Encoding
             speech_encoding = self.speech_encoder_network(audio_features)
