@@ -1,3 +1,6 @@
+import sys
+sys.path.append("./ZEGGS/")
+
 import os
 import json
 import torch
@@ -11,7 +14,7 @@ from audio.audio_files import read_wavfile
 from data_pipeline import preprocess_animation
 from data_pipeline import preprocess_audio
 from helpers import split_by_ratio
-from utils import write_bvh
+from utils import write_bvh, change_bvh, convert_ipose_to_tpose, convert_to_mixamo_bone_structure
 
 
 class ZeroEggsInference(object):
@@ -87,7 +90,14 @@ class ZeroEggsInference(object):
                 style_encoding=style_encoding,
                 animation_data=animation_data
             )
-            return bvh_output
+
+            # 4) Post-process raw bvh output
+            ## * Conversion I-pose to T-pose
+            ## * Euler Angle ZYX -> XYZ
+            ## * Conversion to Mixamo bone structure
+            bvh_dict = self._postprocess_bvh_outputs(bvh_output, "")
+            
+            return bvh_dict
 
     def generate_gesture_from_audio_chunk(self, audio_chunk, style_bvh_path, style_encoding_type="example", style_name=None):
         """
@@ -138,7 +148,37 @@ class ZeroEggsInference(object):
                 style_encoding=style_encoding,
                 animation_data=animation_data
             )
-            return bvh_output
+
+            # 4) Post-process raw bvh output
+            ## * Conversion I-pose to T-pose
+            ## * Euler Angle ZYX -> XYZ
+            ## * Conversion to Mixamo bone structure
+            bvh_dict = self._postprocess_bvh_outputs(bvh_output, "")
+            
+            return bvh_dict
+    
+    def _postprocess_bvh_outputs(self, bvh_output, bvh_id, fps=24):
+        if not os.path.exists("./logs"):
+            os.makedirs("./logs", exist_ok=True)
+
+        orig_bvh_path = "./logs/{}_output.bvh".format(bvh_id)
+        out_bvh_path = "./logs/{}_output_final.bvh".format(bvh_id)
+
+        bvh.save(orig_bvh_path, bvh_output)
+        convert_ipose_to_tpose(orig_bvh_path, out_bvh_path)
+        change_bvh(out_bvh_path, out_bvh_path, fps=fps)
+        bvh_dict = bvh.load(out_bvh_path)
+        bvh_dict = convert_to_mixamo_bone_structure(bvh_dict)
+
+        rotations = quat.unroll(quat.from_euler(np.radians(bvh_dict['rotations']), order=bvh_dict['order']))
+        bvh_dict['order'] = 'xyz'
+        bvh_dict['rotations'] = np.degrees(quat.to_euler(rotations, order='xyz'))
+
+        bvh.save(out_bvh_path, bvh_dict)
+
+        print("Saved BVH File in {}".format(out_bvh_path))
+
+        return bvh_dict
 
     def _make_bvh_outputs(self, speech_encoding, style_encoding, animation_data):
         if style_encoding.dim() == 2:

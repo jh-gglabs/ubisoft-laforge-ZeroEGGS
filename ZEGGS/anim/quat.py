@@ -110,18 +110,23 @@ def slerp(x, y, a, eps=1e-10):
 
 def to_euler(x, order='zyx'):
     x0, x1, x2, x3 = x[..., 0:1], x[..., 1:2], x[..., 2:3], x[..., 3:4]
-
     if order == 'zyx':
         return np.concatenate([
             np.arctan2(2.0 * (x0 * x3 + x1 * x2), 1.0 - 2.0 * (x2 * x2 + x3 * x3)),
             np.arcsin(np.clip(2.0 * (x0 * x2 - x3 * x1), -1.0, 1.0)),
             np.arctan2(2.0 * (x0 * x1 + x2 * x3), 1.0 - 2.0 * (x1 * x1 + x2 * x2)),
         ], axis=-1)
-    elif order == 'xzy':
+    # elif order == 'xzy':
+    #     return np.concatenate([
+    #         np.arctan2(2.0 * (x1 * x0 - x2 * x3), -x1 * x1 + x2 * x2 - x3 * x3 + x0 * x0),
+    #         np.arctan2(2.0 * (x2 * x0 - x1 * x3), x1 * x1 - x2 * x2 - x3 * x3 + x0 * x0),
+    #         np.arcsin(np.clip(2.0 * (x1 * x2 + x3 * x0), -1.0, 1.0))
+    #     ], axis=-1)
+    elif order == 'xyz':
         return np.concatenate([
-            np.arctan2(2.0 * (x1 * x0 - x2 * x3), -x1 * x1 + x2 * x2 - x3 * x3 + x0 * x0),
-            np.arctan2(2.0 * (x2 * x0 - x1 * x3), x1 * x1 - x2 * x2 - x3 * x3 + x0 * x0),
-            np.arcsin(np.clip(2.0 * (x1 * x2 + x3 * x0), -1.0, 1.0))
+            np.arctan2(2 * (x0 * x1 - x2 * x3), x0 * x0 - x1 * x1 - x2 * x2 + x3 * x3),
+            np.arcsin((2 * (x1 * x3 + x0 * x2)).clip(-1,1)),
+            np.arctan2(2 * (x0 * x3 - x1 * x2), x0 * x0 + x1 * x1 - x2 * x2 - x3 * x3)
         ], axis=-1)
     else:
         raise NotImplementedError('Cannot convert to ordering %s' % order)
