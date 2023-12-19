@@ -171,6 +171,8 @@ class ZeroEggsInference(object):
         bvh_dict = convert_to_mixamo_bone_structure(bvh_dict)
 
         rotations = quat.unroll(quat.from_euler(np.radians(bvh_dict['rotations']), order=bvh_dict['order']))
+        rotations[-1] = rotations[-2] # Remove last frame (T-pose)
+
         bvh_dict['order'] = 'xyz'
         bvh_dict['rotations'] = np.degrees(quat.to_euler(rotations, order='xyz'))
 
