@@ -5,12 +5,14 @@ import os
 import json
 import torch
 import numpy as np
+import librosa
 from omegaconf import DictConfig
+from io import BytesIO
 
 from anim import bvh
 from anim import quat
 from anim.txform import *
-from audio.audio_files import read_wavfile
+from audio.audio_files import read_wavfile, _rescale_wav_to_float32
 from data_pipeline import preprocess_animation
 from data_pipeline import preprocess_audio
 from helpers import split_by_ratio
@@ -37,7 +39,7 @@ class ZeroEggsInference(object):
         # Load configs
         self.stat_data, self.data_pipeline_conf, self.details = self._load_data_configs(config_directory_path)
 
-    def generate_gesture_from_audio_file(self, audio_file_path, style_bvh_path, style_encoding_type="example", style_name=None):
+    def generate_gesture_from_audio_file(self, audio_file, style_bvh_path, style_encoding_type="example", style_name=None):
         """
         Args:
             audio_file_path: Path to audio file.
@@ -51,10 +53,16 @@ class ZeroEggsInference(object):
             bvh_output: Body Gestures Output in BVH format
         """
         with torch.no_grad():
-            _, audio_data = read_wavfile(
-                audio_file_path, 
-                rescale=True, desired_fs=16000, out_type="float32"
-            )
+            x, sr = librosa.load(BytesIO(audio_file))
+            if (sr != 16000):
+                x = librosa.resample(x, orig_sr=sr, target_sr=16000)
+            x = _rescale_wav_to_float32(x)
+
+            audio_data = np.asarray(x).astype("float32")
+            # _, audio_data = read_wavfile(
+            #     audio_file_path, 
+            #     rescale=True, desired_fs=16000, out_type="float32"
+            # )
 
             n_frames = int(round(60.0 * (len(audio_data) / 16000)))
             audio_features = torch.as_tensor(
@@ -96,8 +104,15 @@ class ZeroEggsInference(object):
             ## * Euler Angle ZYX -> XYZ
             ## * Conversion to Mixamo bone structure
             bvh_dict = self._postprocess_bvh_outputs(bvh_output, "")
+
+            # BVH Strings
+            bvh.save("./temp.bvh", bvh_dict)
+            bvh_strings = ""
+            with open("./temp.bvh", "r") as f:
+                for line in f.readlines():
+                    bvh_strings += line
             
-            return bvh_dict
+            return bvh_strings
 
     def generate_gesture_from_audio_chunk(self, audio_chunk, style_bvh_path, style_encoding_type="example", style_name=None):
         """
