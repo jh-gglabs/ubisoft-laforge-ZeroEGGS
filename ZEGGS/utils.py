@@ -45,7 +45,7 @@ def change_bvh(filename, savename, order=None, fps=None, pace=1.0, center=False)
 
 
 def write_bvh(
-        filename,
+        
         V_root_pos,
         V_root_rot,
         V_lpos,
@@ -54,6 +54,7 @@ def write_bvh(
         names,
         order,
         dt,
+        filename=None,
         start_position=None,
         start_rotation=None,
 ):
@@ -73,9 +74,7 @@ def write_bvh(
     V_lpos[:, 0] = quat.mul_vec(V_root_rot, V_lpos[:, 0]) + V_root_pos
     V_lrot[:, 0] = quat.mul(V_root_rot, V_lrot[:, 0])
 
-    bvh.save(
-        filename,
-        dict(
+    bvh_info = dict(
             order=order,
             offsets=V_lpos[0],
             names=names,
@@ -83,5 +82,9 @@ def write_bvh(
             parents=parents,
             positions=V_lpos,
             rotations=np.degrees(quat.to_euler(V_lrot, order=order)),
-        ),
     )
+
+    if filename is not None:
+        bvh.save(filename, bvh_info)
+
+    return bvh_info
